@@ -29,8 +29,8 @@ type (
 
 	// RoleSource 获得用户的角色编号列表
 	RoleSource interface {
-		// GetsRoleIds 获得用户的角色编号列表
-		GetsRoleId(user interface{}) ([]int64, error)
+		// GetsRoleIdsForUser 获得用户的角色编号列表
+		GetsRoleIdsForUser(int64) ([]int64, error)
 	}
 )
 
@@ -89,14 +89,17 @@ func (jcc *JWTCasbinConfig) CheckPermission(c echo.Context) (checked bool, err e
 	var (
 		user    gox.BaseUser
 		roleIds []int64
-		ec      = NewContext(c, jcc.JWT)
+		ec      = EchoContext{
+			Context: c,
+			jwt:     jcc.JWT,
+		}
 	)
 
-	if err = ec.Subject(user); nil != err {
+	if user, err = ec.User(); nil != err {
 		return
 	}
 
-	if roleIds, err = jcc.RoleSource.GetsRoleId(user.Id); nil != err {
+	if roleIds, err = jcc.RoleSource.GetsRoleIdsForUser(user.Id); nil != err {
 		return
 	}
 
@@ -115,11 +118,11 @@ func (jcc *JWTCasbinConfig) CheckPermission(c echo.Context) (checked bool, err e
 	return
 }
 
-func (jcc *JWTCasbinConfig) checkPermission(obj string, act string, roleIds ...int64) (checked bool, err error) {
+func (jcc *JWTCasbinConfig) checkPermission(ojb string, act string, roleIds ...int64) (checked bool, err error) {
 	for _, roleId := range roleIds {
 		roleIdStr := strconv.FormatInt(roleId, 10)
 		// 调用Casbin检查权限
-		if checked, err = jcc.Enforcer.Enforce(roleIdStr, obj, act); nil != err {
+		if checked, err = jcc.Enforcer.Enforce(roleIdStr, ojb, act); nil != err {
 			break
 		}
 
