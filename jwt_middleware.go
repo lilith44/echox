@@ -12,7 +12,6 @@ import (
 	`github.com/labstack/echo/v4`
 	`github.com/labstack/echo/v4/middleware`
 	`github.com/rs/xid`
-	`github.com/storezhang/gox`
 )
 
 const (
@@ -125,32 +124,29 @@ func (jc *JWTConfig) Extractor(c echo.Context) (token string, err error) {
 	return
 }
 
-func (jc *JWTConfig) Token(claims jwt.Claims) (string, error) {
+func (jc *JWTConfig) MakeToken(claims jwt.Claims) (string, error) {
 	token := jwt.NewWithClaims(jwt.GetSigningMethod(jc.SigningMethod), claims)
 
 	return token.SignedString([]byte(jc.SigningKey.(string)))
 }
 
-func (jc *JWTConfig) UserToken(
+func (jc *JWTConfig) Token(
 	domain string,
-	user gox.BaseUser,
+	subject interface{},
 	expire time.Duration,
 ) (token string, id string, err error) {
 	// 序列化User对象为JSON
-	var userBytes []byte
-	// 去掉额外不需要的字段
-	user.UpdatedAt = gox.ZeroTimestamp()
-	user.CreatedAt = gox.ZeroTimestamp()
-	if userBytes, err = json.Marshal(user); nil != err {
+	var subjectBytes []byte
+	if subjectBytes, err = json.Marshal(subject); nil != err {
 		return
 	}
 
 	id = xid.New().String()
-	token, err = jc.Token(jwt.StandardClaims{
+	token, err = jc.MakeToken(jwt.StandardClaims{
 		// 代表这个JWT的签发主体
 		Issuer: domain,
 		// 代表这个JWT的主体，即它的所有人
-		Subject: string(userBytes),
+		Subject: string(subjectBytes),
 		// 代表这个JWT的接收对象
 		Audience: domain,
 		// 是一个时间戳，代表这个JWT的签发时间

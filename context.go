@@ -2,7 +2,6 @@ package echox
 
 import (
 	`encoding/json`
-	`io/ioutil`
 	`net/http`
 	`os`
 	`time`
@@ -18,7 +17,7 @@ const (
 )
 
 type (
-	// EchoContext
+	// EchoContext 自定义的Echo上下文
 	EchoContext struct {
 		echo.Context
 
@@ -27,7 +26,14 @@ type (
 	}
 )
 
-func (ec *EchoContext) User() (user gox.BaseUser, err error) {
+func NewContext(c echo.Context, jwt *JWTConfig) *EchoContext {
+	return &EchoContext{
+		Context: c,
+		jwt:     jwt,
+	}
+}
+
+func (ec *EchoContext) Subject(subject interface{}) (err error) {
 	var (
 		token  string
 		claims jwt.Claims
@@ -41,14 +47,14 @@ func (ec *EchoContext) User() (user gox.BaseUser, err error) {
 		return
 	}
 
-	// 从JWT Token中反序列化User
-	err = json.Unmarshal([]byte(claims.(*jwt.StandardClaims).Subject), &user)
+	// 从Token中反序列化主题数据
+	err = json.Unmarshal([]byte(claims.(*jwt.StandardClaims).Subject), &subject)
 
 	return
 }
 
-func (ec *EchoContext) JWTToken(domain string, user gox.BaseUser, expire time.Duration) (token string, id string, err error) {
-	return ec.jwt.UserToken(domain, user, expire)
+func (ec *EchoContext) JWTToken(domain string, data interface{}, expire time.Duration) (token string, id string, err error) {
+	return ec.jwt.Token(domain, data, expire)
 }
 
 func (ec *EchoContext) HttpFile(file http.File) (err error) {
@@ -138,7 +144,7 @@ func (ec *EchoContext) jsonPBlob(code int, callback string, i interface{}) (err 
 
 func (ec *EchoContext) json(code int, i interface{}, indent string) error {
 	enc := jsoniter.NewEncoder(ec.Response())
-	if indent != "" {
+	if "" != indent {
 		enc.SetIndent("", indent)
 	}
 	ec.writeContentType(echo.MIMEApplicationJSONCharsetUTF8)
@@ -152,66 +158,4 @@ func (ec *EchoContext) writeContentType(value string) {
 	if "" == header.Get(echo.HeaderContentType) {
 		header.Set(echo.HeaderContentType, value)
 	}
-}
-
-// 获取有关联表的更新信息
-func UpdateWithRelation(c echo.Context, bean interface{}, notCols ...string) (cols, otherCols []string, err error) {
-	var (
-		reqMap = make(map[string]interface{})
-	)
-
-	if err = UpdateMap(c, bean, &reqMap); nil != err {
-		return
-	}
-
-	cols = make([]string, 0)
-	otherCols = make([]string, 0)
-	for key := range reqMap {
-		if exists, _ := gox.IsInArray(key, notCols); exists {
-			otherCols = append(otherCols, gox.UnderscoreName(key, false))
-		} else {
-			cols = append(cols, gox.UnderscoreName(key, false))
-		}
-	}
-
-	if 0 == len(cols) && 0 == len(otherCols) {
-		err = ErrNoUpdateParam
-	}
-
-	return
-}
-
-func UpdateInfo(c echo.Context, bean interface{}) (cols []string, err error) {
-	var reqMap = make(map[string]interface{})
-
-	if err = UpdateMap(c, bean, &reqMap); nil != err {
-		return
-	}
-
-	cols = make([]string, 0)
-	for key := range reqMap {
-		cols = append(cols, gox.UnderscoreName(key, false))
-	}
-
-	if 0 == len(cols) {
-		err = ErrNoUpdateParam
-	}
-
-	return
-}
-
-func UpdateMap(c echo.Context, bean, reqMap interface{}) (err error) {
-	var body []byte
-
-	if body, err = ioutil.ReadAll(c.Request().Body); nil != err {
-		return
-	}
-	if err = json.Unmarshal(body, bean); nil != err {
-		return
-	}
-	if err = json.Unmarshal(body, &reqMap); nil != err {
-		return
-	}
-
-	return
 }

@@ -78,7 +78,7 @@ func StartWith(ec *EchoConfig) {
 	// 初始化Validator
 	if ec.Validate {
 		// 数据验证
-		e.Validator = validatorx.GetInstance()
+		e.Validator = validatorx.New()
 	}
 
 	// 初始化绑定
@@ -139,11 +139,7 @@ func StartWith(ec *EchoConfig) {
 	if nil != ec.JWT {
 		e.Use(func(h echo.HandlerFunc) echo.HandlerFunc {
 			return func(c echo.Context) error {
-				cc := &EchoContext{
-					Context: c,
-					jwt:     ec.JWT,
-				}
-				return h(cc)
+				return h(NewContext(c, ec.JWT))
 			}
 		})
 	}
