@@ -3,6 +3,7 @@ package echox
 import (
 	`net/http`
 
+	`github.com/dgrijalva/jwt-go`
 	`github.com/go-playground/validator/v10`
 	`github.com/labstack/echo/v4`
 	`github.com/storezhang/gox`
@@ -23,6 +24,11 @@ func errorHandlerFunc(err error, ctx echo.Context) {
 		if nil != e.Internal {
 			rsp.Data = e.Internal.Error()
 		}
+	case *jwt.ValidationError:
+		statusCode = http.StatusUnauthorized
+		rsp.ErrorCode = 9904
+		rsp.Message = "登录失效，请重新登录"
+		rsp.Data = e.Error()
 	case validator.ValidationErrors:
 		statusCode = http.StatusBadRequest
 		lang := ctx.Request().Header.Get(gox.HeaderAcceptLanguage)

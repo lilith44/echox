@@ -83,7 +83,7 @@ func JwtMiddleware(config *Jwt) MiddlewareFunc {
 			} else {
 				err = &echo.HTTPError{
 					Code:     http.StatusUnauthorized,
-					Message:  "JWT错误或者已经失效",
+					Message:  "登录失效，请重新登录",
 					Internal: err,
 				}
 			}
