@@ -13,7 +13,7 @@ func parseMiddlewares(middlewares ...MiddlewareFunc) (ems []echo.MiddlewareFunc)
 		return
 	}
 
-	ems = make([]echo.MiddlewareFunc, length)
+	ems = make([]echo.MiddlewareFunc, 0, length)
 	for _, middleware := range middlewares {
 		ems = append(ems, func(next echo.HandlerFunc) echo.HandlerFunc {
 			handler := middleware(func(ctx *Context) (err error) {
@@ -21,7 +21,7 @@ func parseMiddlewares(middlewares ...MiddlewareFunc) (ems []echo.MiddlewareFunc)
 			})
 
 			return func(ctx echo.Context) error {
-				return handler(ctx.(*Context))
+				return handler(parseContext(ctx))
 			}
 		})
 	}

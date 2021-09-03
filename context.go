@@ -1,6 +1,7 @@
 package echox
 
 import (
+	`bytes`
 	`net/http`
 	`os`
 
@@ -8,11 +9,19 @@ import (
 	`github.com/storezhang/gox`
 )
 
-const defaultIndent = "  "
-
 // Context 自定义的Echo上下文
 type Context struct {
 	echo.Context
+}
+
+func parseContext(ctx echo.Context) (context *Context) {
+	if _ctx, ok := ctx.(*Context); ok {
+		context = _ctx
+	} else {
+		context = &Context{Context: ctx}
+	}
+
+	return
 }
 
 func (c *Context) Fill(data interface{}) (err error) {
@@ -45,6 +54,26 @@ func (c *Context) HttpAttachment(file http.File, name string) error {
 
 func (c *Context) HttpInline(file http.File, name string) error {
 	return c.contentDisposition(file, name, gox.ContentDispositionTypeInline)
+}
+
+func (c *Context) BodyString() (body string, err error) {
+	buf := new(bytes.Buffer)
+	if _, err = buf.ReadFrom(c.Request().Body); nil != err {
+		return
+	}
+	body = buf.String()
+
+	return
+}
+
+func (c *Context) BodyBytes() (body []byte, err error) {
+	buf := new(bytes.Buffer)
+	if _, err = buf.ReadFrom(c.Request().Body); nil != err {
+		return
+	}
+	body = buf.Bytes()
+
+	return
 }
 
 func (c *Context) contentDisposition(file http.File, name string, dispositionType gox.ContentDispositionType) error {
