@@ -1,4 +1,4 @@
-module github.com/storezhang/echox/v2
+module github.com/lilith44/echox/v2
 
 go 1.16
 
