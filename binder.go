@@ -1,18 +1,26 @@
 package echox
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/mcuadros/go-defaults"
+	`reflect`
+
+	`github.com/labstack/echo/v4`
+	`github.com/mcuadros/go-defaults`
 )
 
-type DefaultValueBinder struct{}
+type binder struct{}
 
-func (dvb *DefaultValueBinder) Bind(i interface{}, c echo.Context) (err error) {
-	defaults.SetDefaults(i)
-
-	db := new(echo.DefaultBinder)
-	if err = db.Bind(i, c); err != echo.ErrUnsupportedMediaType {
+func (b *binder) Bind(req interface{}, ctx echo.Context) (err error) {
+	defaultBinder := new(echo.DefaultBinder)
+	if err = defaultBinder.Bind(req, ctx); nil != err {
 		return
+	}
+
+	// 处理默认值
+	// 区分指针类型和非指针类型
+	if reflect.ValueOf(req).Kind() == reflect.Ptr {
+		defaults.SetDefaults(req)
+	} else {
+		defaults.SetDefaults(&req)
 	}
 
 	return
