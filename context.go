@@ -47,6 +47,19 @@ func (ec *EchoContext) User() (user gox.BaseUser, err error) {
 	return
 }
 
+func (ec *EchoContext) GetUserFromToken(token string) (user gox.BaseUser, err error) {
+	var claims jwt.Claims
+
+	if claims, _, err = ec.jwt.Parse(token); nil != err {
+		return
+	}
+
+	// 从JWT Token中反序列化User
+	err = json.Unmarshal([]byte(claims.(*jwt.StandardClaims).Subject), &user)
+
+	return
+}
+
 func (ec *EchoContext) JWTToken(domain string, user gox.BaseUser, expire time.Duration) (token string, id string, err error) {
 	return ec.jwt.UserToken(domain, user, expire)
 }
