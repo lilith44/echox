@@ -1,10 +1,15 @@
 package echox
 
 import (
+	`bytes`
+	`crypto/aes`
+	`crypto/cipher`
+	`encoding/hex`
 	`encoding/json`
 	`io/ioutil`
 	`net/http`
 	`os`
+	`strings`
 	`time`
 
 	`github.com/dgrijalva/jwt-go`
@@ -13,19 +18,68 @@ import (
 	`github.com/storezhang/gox`
 )
 
-const (
-	defaultIndent = "  "
-)
+const defaultIndent = "  "
 
 type (
-	// EchoContext
 	EchoContext struct {
 		echo.Context
 
 		// JWT配置
 		jwt *JWTConfig
+
+		// AES配置
+		aes *AESConfig
+	}
+
+	AESConfig struct {
+		// 加密块
+		block cipher.Block
+		// 是否开启
+		Enable bool
+		// 加密密钥，需要是长度32的16进制字符串
+		Key string
+		// 不进行加密的接口前缀
+		ExcludeRouterPrefixes []string
 	}
 )
+
+func (a *AESConfig) Encrypt(plainText []byte) (hexed []byte, err error) {
+	if a.block == nil {
+		var hexKey []byte
+		if hexKey, err = hex.DecodeString(a.Key); err != nil {
+			return
+		}
+
+		if a.block, err = aes.NewCipher(hexKey); err != nil {
+			return
+		}
+	}
+
+	// 第一步，进行填充
+	plainText = pkcs7Padding(plainText, a.block.BlockSize())
+
+	// 第二步，生成随机偏移量
+	iv := []byte(gox.RandString(a.block.BlockSize()))
+
+	// 第三步，进行加密
+	cipherText := make([]byte, len(plainText))
+	cipher.NewCBCEncrypter(a.block, iv).CryptBlocks(cipherText, plainText)
+
+	// 第四步，偏移量和密文进行拼接，生成最终的密文
+	cipherText = append(iv, cipherText...)
+
+	// 第五步，将密文转为16进制数据
+	hexed = make([]byte, hex.EncodedLen(len(cipherText)))
+	hex.Encode(hexed, cipherText)
+
+	return
+}
+
+func pkcs7Padding(data []byte, size int) []byte {
+	padding := size - len(data)%size
+
+	return append(data, bytes.Repeat([]byte{byte(padding)}, padding)...)
+}
 
 func (ec *EchoContext) User() (user gox.BaseUser, err error) {
 	var (
@@ -95,6 +149,32 @@ func (ec *EchoContext) contentDisposition(file http.File, name string, dispositi
 }
 
 func (ec *EchoContext) JSON(code int, i interface{}) (err error) {
+	if ec.aes.Enable {
+		exist := false
+		for _, router := range ec.aes.ExcludeRouterPrefixes {
+			if strings.HasPrefix(ec.Context.Request().RequestURI, router) {
+				exist = true
+
+				break
+			}
+		}
+
+		if !exist {
+			var data []byte
+			if data, err = json.Marshal(i); err != nil {
+				return
+			}
+
+			if data, err = ec.aes.Encrypt(data); err != nil {
+				return
+			}
+
+			_ = ec.Blob(code, echo.MIMEOctetStream, data)
+
+			return
+		}
+	}
+
 	indent := ""
 	if _, pretty := ec.QueryParams()["pretty"]; ec.Echo().Debug || pretty {
 		indent = defaultIndent

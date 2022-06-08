@@ -44,6 +44,7 @@ type (
 		JWT                *JWTConfig
 		Init               EchoFunc
 		Routes             []RouteFunc
+		AES                *AESConfig
 	}
 )
 
@@ -142,6 +143,7 @@ func StartWith(ec *EchoConfig) {
 				cc := &EchoContext{
 					Context: c,
 					jwt:     ec.JWT,
+					aes:     ec.AES,
 				}
 				return h(cc)
 			}
