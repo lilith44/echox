@@ -148,6 +148,38 @@ func (ec *EchoContext) contentDisposition(file http.File, name string, dispositi
 	return ec.HttpFile(file)
 }
 
+func (ec *EchoContext) NoContent(code int) (err error) {
+	if ec.aes.Enable {
+		exist := false
+		for _, router := range ec.aes.ExcludeRouterPrefixes {
+			if strings.HasPrefix(ec.Context.Request().RequestURI, router) {
+				exist = true
+
+				break
+			}
+		}
+
+		if !exist {
+			var data []byte
+			if data, err = json.Marshal(make([]int, 0)); err != nil {
+				return
+			}
+
+			if data, err = ec.aes.Encrypt(data); err != nil {
+				return
+			}
+
+			_ = ec.Blob(http.StatusOK, echo.MIMEOctetStream, data)
+
+			return
+		}
+	}
+
+	ec.Context.Response().WriteHeader(code)
+
+	return
+}
+
 func (ec *EchoContext) JSON(code int, i interface{}) (err error) {
 	if ec.aes.Enable {
 		exist := false

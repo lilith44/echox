@@ -2,6 +2,7 @@ package echox
 
 import (
 	`context`
+	`encoding/json`
 	`fmt`
 	`net/http`
 	`os`
@@ -121,7 +122,33 @@ func StartWith(ec *EchoConfig) {
 				rsp.Message = "服务器内部错误"
 			}
 
-			_ = c.JSON(statusCode, rsp)
+			if ec.AES != nil && ec.AES.Enable {
+				exist := false
+				for _, router := range ec.AES.ExcludeRouterPrefixes {
+					if strings.HasPrefix(c.Request().RequestURI, router) {
+						exist = true
+
+						break
+					}
+				}
+
+				if !exist {
+					var data []byte
+					if data, err = json.Marshal(rsp); err != nil {
+						return
+					}
+
+					if data, err = ec.AES.Encrypt(data); err != nil {
+						return
+					}
+
+					_ = c.Blob(statusCode, echo.MIMEOctetStream, data)
+
+					return
+				}
+
+				_ = c.JSON(statusCode, rsp)
+			}
 		}
 	}
 
