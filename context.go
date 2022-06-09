@@ -169,7 +169,7 @@ func (ec *EchoContext) NoContent(code int) (err error) {
 				return
 			}
 
-			_ = ec.Blob(http.StatusOK, echo.MIMEOctetStream, data)
+			_ = ec.Blob(http.StatusOK, echo.MIMETextPlain, data)
 
 			return
 		}
@@ -201,7 +201,7 @@ func (ec *EchoContext) JSON(code int, i interface{}) (err error) {
 				return
 			}
 
-			_ = ec.Blob(code, echo.MIMEOctetStream, data)
+			_ = ec.Blob(code, echo.MIMETextPlain, data)
 
 			return
 		}

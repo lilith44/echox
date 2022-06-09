@@ -142,7 +142,7 @@ func StartWith(ec *EchoConfig) {
 						return
 					}
 
-					_ = c.Blob(statusCode, echo.MIMEOctetStream, data)
+					_ = c.Blob(statusCode, echo.MIMETextPlain, data)
 
 					return
 				}
