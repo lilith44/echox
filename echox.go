@@ -146,9 +146,9 @@ func StartWith(ec *EchoConfig) {
 
 					return
 				}
-
-				_ = c.JSON(statusCode, rsp)
 			}
+
+			_ = c.JSON(statusCode, rsp)
 		}
 	}
 
