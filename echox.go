@@ -118,8 +118,20 @@ func StartWith(ec *EchoConfig) {
 				rsp.Message = re.ToMessage()
 				rsp.Data = re.ToData()
 			default:
-				rsp.ErrorCode = 9903
-				rsp.Message = "服务器内部错误"
+				msg := err.Error()
+				if index := strings.LastIndex(msg, "="); index != -1 && index+2 < len(msg) {
+					msg = msg[index+2:]
+				}
+
+				codeError := new(gox.CodeError)
+				if err = json.Unmarshal([]byte(msg), codeError); err == nil {
+					rsp.ErrorCode = int(codeError.ErrorCode)
+					rsp.Message = codeError.ToMessage()
+					rsp.Data = codeError.ToData()
+				} else {
+					rsp.ErrorCode = 9903
+					rsp.Message = "服务器内部错误"
+				}
 			}
 
 			if ec.AES != nil && ec.AES.Enable {
