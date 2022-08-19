@@ -175,19 +175,16 @@ func StartWith(ec *EchoConfig) {
 	e.Use(PanicStack())
 	e.Use(middleware.RequestID())
 
-	// 符合JWT和Casbin的上下文
-	if nil != ec.JWT {
-		e.Use(func(h echo.HandlerFunc) echo.HandlerFunc {
-			return func(c echo.Context) error {
-				cc := &EchoContext{
-					Context: c,
-					jwt:     ec.JWT,
-					aes:     ec.AES,
-				}
-				return h(cc)
+	e.Use(func(h echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			cc := &EchoContext{
+				Context: c,
+				jwt:     ec.JWT,
+				aes:     ec.AES,
 			}
-		})
-	}
+			return h(cc)
+		}
+	})
 
 	// 启动Server
 	go func() {
