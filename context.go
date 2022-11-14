@@ -1,21 +1,21 @@
 package echox
 
 import (
-	"bytes"
-	"crypto/aes"
-	"crypto/cipher"
-	"encoding/hex"
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"strings"
-	"time"
+	`bytes`
+	`crypto/aes`
+	`crypto/cipher`
+	`encoding/hex`
+	`encoding/json`
+	`io/ioutil`
+	`net/http`
+	`os`
+	`strings`
+	`time`
 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/json-iterator/go"
-	"github.com/labstack/echo/v4"
-	"github.com/storezhang/gox"
+	`github.com/dgrijalva/jwt-go`
+	`github.com/json-iterator/go`
+	`github.com/labstack/echo/v4`
+	`github.com/storezhang/gox`
 )
 
 const defaultIndent = "  "
